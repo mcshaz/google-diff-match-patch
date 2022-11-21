@@ -1,4 +1,5 @@
 using DiffMatchPatch;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -433,6 +434,21 @@ namespace DiffMatchPatchTests
             var boolArray = results.results;
             var resultStr = results.newText + "\t" + boolArray[0];
             Assert.AreEqual("x123\tTrue", resultStr, "patch_apply: Edge partial match.");
+        }
+        [Test]
+        public void Serialize_Deserialize_Apply_Roundtrip()
+        {
+            string was = "`Churchill` talked about climbing a wall which is leaning toward you and kissing a woman who is leaning away from you.";
+            string became = "There are two things that are more difficult than making an after-dinner speech: climbing a wall which is leaning toward you and kissing a girl who is leaning away from yo.";
+            List<Patch> patches = Patch.Compute(was, became);
+            string serializedPatches = patches.ToText();
+            // now deserialize
+            List<Patch> deserializedPatches = PatchList.Parse(serializedPatches);
+            // Console.WriteLine(JsonConvert.SerializeObject(deserializedPatches));
+            var (patchedText, wasApplied) = deserializedPatches.Apply(was);
+            // testing all patches were successfully applied
+            CollectionAssert.AreEquivalent(Enumerable.Repeat(true, patches.Count), wasApplied);
+            Assert.AreEqual(became, patchedText);
         }
     }
 }
